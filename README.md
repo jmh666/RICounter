@@ -1,6 +1,8 @@
 # RICounter
 AWS Reserved Instance Counter
 
+Requires boto.  Tested on python 2.7.
+
 Will use roles or environment variables to authenticate itself to the EC2 API.
 
 Negative numbers indicate excess/unused RIs provisioned for that instance type in that AZ
