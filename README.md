@@ -9,7 +9,7 @@ Negative numbers indicate excess/unused RIs provisioned for that instance type i
 
 Positive numbers indicate un-reserved instances of that type in that AZ
 
-Usage: ./RICounter
+Usage: ./RICounter.py
 
 Sample output:
 
