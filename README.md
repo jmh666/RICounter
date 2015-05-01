@@ -9,8 +9,8 @@ For each instance type, in each availability zone, in each selected region,
 RICounter provides the number of running instances, the number of matching
 reservations, and the difference between the two.
 
-Negative differences indicate unused reservations.
-Positive differences indicate instances not matching a reservation.
+Negative differences indicate unused reservations, whereas positive differences 
+indicate instances not matching a reservation.
 
 usage: RICounter.py [-h] [--region REGIONS]
 
