@@ -5,28 +5,34 @@ Requires boto.  Tested on python 2.7.
 
 Will use roles or environment variables to authenticate itself to the EC2 API.
 
-Negative numbers indicate excess/unused RIs provisioned for that instance type in that AZ
+For each instance type, in each availability zone, in each selected region, 
+RICounter provides the number of running instances, the number of matching
+reservations, and the difference between the two.
 
-Positive numbers indicate un-reserved instances of that type in that AZ
+Negative differences indicate unused reservations.
+Positive differences indicate instances not matching a reservation.
 
-Usage: ./RICounter.py
+usage: RICounter.py [-h] [--region REGIONS]
 
+optional arguments:
+  -h, --help        show this help message and exit
+  --region REGIONS  specify a region (default is all standard regions)
 Sample output:
 
-    us-east-1b - c3.xlarge  0
-    us-east-1b - m1.small   1
-    us-east-1b - m3.large   1
-    us-east-1b - m3.medium  2
-    us-east-1c - c1.xlarge  0
-    us-east-1c - c3.2xlarge 0
-    us-east-1c - c3.large   2
-    us-east-1c - m1.large   1
-    us-east-1c - m1.small   3
-    us-east-1c - m1.xlarge  1
-    us-east-1c - m3.large   2
-    us-east-1c - m3.medium  2
-    us-east-1c - m3.xlarge  0
-    us-east-1c - t1.micro   2
-    us-east-1d - m1.xlarge  1
-    us-east-1e - t1.micro   1
-    us-west-1c - t1.micro   1
+Instance    AZ      Run Reserve Diff
+c3.2xlarge  us-east-1b  3   3   0
+c3.2xlarge  us-east-1d  2   2   0
+c4.large    us-east-1b  2   2   0
+c4.large    us-east-1d  2   2   0
+c4.large    us-east-1e  2   2   0
+m1.large    us-east-1b  3   4   -1
+c3.xlarge   eu-west-1b  3   3   0
+c3.xlarge   eu-west-1c  3   3   0
+m3.2xlarge  eu-west-1b  14  13  1
+m3.2xlarge  eu-west-1c  13  13  0
+c3.large    us-west-2a  1   1   0
+c3.large    us-west-2b  1   1   0
+c3.large    us-west-2c  1   1   0
+c3.xlarge   us-west-2a  3   3   0
+c3.xlarge   us-west-2b  3   3   0
+c3.xlarge   us-west-2c  3   3   0
