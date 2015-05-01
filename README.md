@@ -19,7 +19,7 @@ optional arguments:
   --region REGIONS  specify a region (default is all standard regions)
 Sample output:
 
-`
+```
 Instance    AZ      Run Reserve Diff
 c3.2xlarge  us-east-1b  3   3   0
 c3.2xlarge  us-east-1d  2   2   0
@@ -37,4 +37,4 @@ c3.large    us-west-2c  1   1   0
 c3.xlarge   us-west-2a  3   3   0
 c3.xlarge   us-west-2b  3   3   0
 c3.xlarge   us-west-2c  3   3   0
-`
+```
