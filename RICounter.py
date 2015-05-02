@@ -22,8 +22,8 @@ reservation_filters = {'state': 'active'}
 
 
 def sort_instances(instances):
+    size_order = {'micro': 0, 'small': 1, 'medium': 2, 'large': 3, 'xlarge': 4, '2xlarge': 5, '4xlarge': 6, '8xlarge': 7}
     def instance_key(instance):
-        size_order = {'micro': 0, 'small': 1, 'medium': 2, 'large': 3, 'xlarge': 4, '2xlarge': 5, '4xlarge': 6, '8xlarge': 7}
         family, size = re.split('\W', instance)[0:2]
         return family + str(size_order[size])
     return sorted(instances, key=instance_key)
