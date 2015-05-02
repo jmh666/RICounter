@@ -7,6 +7,7 @@ negative balances indicate excess reserved instances
 positive balances indicate instances that are not falling under RIs
 """
 import argparse
+import re
 
 from collections import defaultdict
 
@@ -23,6 +24,13 @@ instance_filters = {
 reservation_filters = {
 	'state': 'active'
 }
+
+def sort_instances(instances):
+	def instance_key(instance):
+		size_order = {'micro': 0, 'small': 1, 'medium': 2, 'large': 3, 'xlarge': 4, '2xlarge': 5, '4xlarge': 6, '8xlarge': 7}
+		family, size = re.split('\W', instance)[0:2]
+		return family + str(size_order[size])
+	return sorted(instances, key=instance_key)
 
 print "Instance\tAZ\t\tRun\tReserve\tDiff"
 
@@ -49,6 +57,6 @@ for region in regions:
 	if len(keys) == 0:
 		continue
 
-	for key in sorted(keys):
+	for key in sort_instances(keys):
 		print "%s\t%d\t%d\t%d" % (key, running_instances[key], reserved_instances[key], 
 			running_instances[key] - reserved_instances[key])
