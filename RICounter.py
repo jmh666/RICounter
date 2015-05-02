@@ -32,14 +32,13 @@ def sort_instances(instances):
 		return family + str(size_order[size])
 	return sorted(instances, key=instance_key)
 
-print "Instance\tAZ\t\tRun\tReserve\tDiff"
-
 if args.regions is None:
 	DISABLED_REGIONS = ['cn-north-1', 'us-gov-west-1']
 	regions = [ r for r in boto.ec2.regions() if r.name not in DISABLED_REGIONS ]
 else:
 	regions = [ r for r in boto.ec2.regions() if r.name in args.regions ]
 
+print "Instance\tAZ\t\tRun\tReserve\tDiff"
 for region in regions:
 	ec2 = region.connect()
 
