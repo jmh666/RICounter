@@ -48,7 +48,7 @@ else:
     regions['redshift'] = [r for r in boto.redshift.regions() if r.name in args.regions]
     regions['rds'] = [r for r in boto.rds2.regions() if r.name in args.regions]
 
-print "Instance\tAZ\t\tRun\tReserve\tDiff"
+print "Instance\t\t\tRun\tReserve\tDiff"
 for region in regions['ec2']:
     ec2 = region.connect()
 
@@ -59,7 +59,7 @@ for region in regions['ec2']:
             running_instances[i.instance_type + "\t" + i.placement] += 1
 
     reserved_instances = defaultdict(int)
-    for ri in ec2.get_all_reserved_instances(filters={'state': 'active', 'state': 'payment-pending'}):
+    for ri in ec2.get_all_reserved_instances(filters={'state': ['active', 'payment-pending']}):
         reserved_instances[ri.instance_type + "\t" + ri.availability_zone] += ri.instance_count
 
     print_results(running_instances, reserved_instances)
