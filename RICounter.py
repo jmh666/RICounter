@@ -32,6 +32,12 @@ def sort_instances(instances):
         return family + str(size_order[size])
     return sorted(instances, key=instance_key)
 
+def print_results(running, reserved):
+    keys = set(running.keys() + reserved.keys())
+    for key in sort_instances(keys):
+        print "%s\t%d\t%d\t%d" % (key, running[key], reserved[key], running[key] - reserved[key])
+
+
 regions = {}
 if args.regions is None:
     regions['ec2'] = [r for r in boto.ec2.regions() if r.name not in DISABLED_REGIONS]
@@ -56,9 +62,7 @@ for region in regions['ec2']:
     for ri in ec2.get_all_reserved_instances(filters={'state': 'active', 'state': 'payment-pending'}):
         reserved_instances[ri.instance_type + "\t" + ri.availability_zone] += ri.instance_count
 
-    keys = set(reserved_instances.keys() + running_instances.keys())
-    for key in sort_instances(keys):
-        print "%s\t%d\t%d\t%d" % (key, running_instances[key], reserved_instances[key], running_instances[key] - reserved_instances[key])
+    print_results(running_instances, reserved_instances)
 
 # RedShift
 for region in regions['redshift']:
@@ -75,9 +79,7 @@ for region in regions['redshift']:
     for reservation in active_reservations:
         reserved_nodes[reservation['NodeType'] + "\t" + region.name] += reservation['NodeCount']
 
-    keys = set(reserved_nodes.keys() + running_nodes.keys())
-    for key in sort_instances(keys):
-        print "Redshift-%s\t%d\t%d\t%d" % (key, running_nodes[key], reserved_nodes[key], running_nodes[key] - reserved_nodes[key])
+    print_results(running_nodes, reserved_nodes)
 
 # RDS
 for region in regions['rds']:
@@ -96,7 +98,5 @@ for region in regions['rds']:
         az = "MultiAZ" if r['MultiAZ'] else "SingleAZ"
         reserved_rds[r['DBInstanceClass'] + "\t" + r['ProductDescription'] + "\t" +  az + "\t" + region.name] += r['DBInstanceCount']
 
-    keys = set(reserved_rds.keys() + running_rds.keys())
-    for key in sort_instances(keys):
-        print "RDS-%s\t%d\t%d\t%d" % (key, running_rds[key], reserved_rds[key], running_rds[key] - reserved_rds[key])
+    print_results(running_rds, reserved_rds)
 
