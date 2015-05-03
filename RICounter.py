@@ -21,6 +21,8 @@ args = parser.parse_args()
 instance_filters = {'instance-state-name': 'running'}
 reservation_filters = {'state': 'active'}
 
+DISABLED_REGIONS = ['cn-north-1', 'us-gov-west-1']
+
 
 def sort_instances(instances):
     size_order = {'micro': 0, 'small': 1, 'medium': 2, 'large': 3, 'xlarge': 4, '2xlarge': 5, '4xlarge': 6, '8xlarge': 7}
@@ -30,7 +32,6 @@ def sort_instances(instances):
     return sorted(instances, key=instance_key)
 
 if args.regions is None:
-    DISABLED_REGIONS = ['cn-north-1', 'us-gov-west-1']
     regions = [r for r in boto.ec2.regions() if r.name not in DISABLED_REGIONS]
 else:
     regions = [r for r in boto.ec2.regions() if r.name in args.regions]
@@ -53,22 +54,26 @@ for region in regions:
     for key in sort_instances(keys):
         print "%s\t%d\t%d\t%d" % (key, running_instances[key], reserved_instances[key], running_instances[key] - reserved_instances[key])
 
-# RedShift - us-east-1 only for now
-regions = boto.redshift.regions()
-conn = boto.redshift.layer1.RedshiftConnection()
+# RedShift
+if args.regions is None:
+    regions = [r for r in boto.redshift.regions() if r.name not in DISABLED_REGIONS]
+else:
+    regions = [r for r in boto.redshift.regions() if r.name in args.regions]
 
-reserved_nodes = defaultdict(int)
-reservation_response = conn.describe_reserved_nodes()
-active_reservations = [x for x in reservation_response['DescribeReservedNodesResponse']['DescribeReservedNodesResult']['ReservedNodes'] if x['State'] == 'active']
-for reservation in active_reservations:
-	reserved_nodes[reservation['NodeType']] += reservation['NodeCount']
+for region in regions:
+	conn = boto.redshift.connect_to_region(region.name)
 
-running_nodes = defaultdict(int)
-cluster_response = conn.describe_clusters()
-for cluster in cluster_response['DescribeClustersResponse']['DescribeClustersResult']['Clusters']:
-	running_nodes[cluster['NodeType']] += cluster['NumberOfNodes']
+	running_nodes = defaultdict(int)
+	cluster_response = conn.describe_clusters()
+	for cluster in cluster_response['DescribeClustersResponse']['DescribeClustersResult']['Clusters']:
+		running_nodes[cluster['NodeType'] + "\t" + region.name] += cluster['NumberOfNodes']
 
-keys = set(reserved_nodes.keys() + running_nodes.keys())
+	reserved_nodes = defaultdict(int)
+	reservation_response = conn.describe_reserved_nodes()
+	active_reservations = [x for x in reservation_response['DescribeReservedNodesResponse']['DescribeReservedNodesResult']['ReservedNodes'] if x['State'] == 'active']
+	for reservation in active_reservations:
+		reserved_nodes[reservation['NodeType'] + "\t" + region.name] += reservation['NodeCount']
 
-for key in sort_instances(keys):
-    print "Redshift-%s\t%d\t%d\t%d" % (key, running_nodes[key], reserved_nodes[key], running_nodes[key] - reserved_nodes[key])
+	keys = set(reserved_nodes.keys() + running_nodes.keys())
+	for key in sort_instances(keys):
+	    print "Redshift-%s\t%d\t%d\t%d" % (key, running_nodes[key], reserved_nodes[key], running_nodes[key] - reserved_nodes[key])
