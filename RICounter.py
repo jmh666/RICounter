@@ -12,6 +12,7 @@ import re
 from collections import defaultdict
 
 import boto.ec2
+import boto.redshift
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--region', action="append", dest="regions", help="specify a region (default is all standard regions)")
@@ -49,8 +50,25 @@ for region in regions:
         reserved_instances[ri.instance_type + "\t" + ri.availability_zone] += ri.instance_count
 
     keys = set(reserved_instances.keys() + running_instances.keys())
-    if len(keys) == 0:
-        continue
-
     for key in sort_instances(keys):
         print "%s\t%d\t%d\t%d" % (key, running_instances[key], reserved_instances[key], running_instances[key] - reserved_instances[key])
+
+# RedShift - us-east-1 only for now
+regions = boto.redshift.regions()
+conn = boto.redshift.layer1.RedshiftConnection()
+
+reserved_nodes = defaultdict(int)
+reservation_response = conn.describe_reserved_nodes()
+active_reservations = [x for x in reservation_response['DescribeReservedNodesResponse']['DescribeReservedNodesResult']['ReservedNodes'] if x['State'] == 'active']
+for reservation in active_reservations:
+	reserved_nodes[reservation['NodeType']] += reservation['NodeCount']
+
+running_nodes = defaultdict(int)
+cluster_response = conn.describe_clusters()
+for cluster in cluster_response['DescribeClustersResponse']['DescribeClustersResult']['Clusters']:
+	running_nodes[cluster['NodeType']] += cluster['NumberOfNodes']
+
+keys = set(reserved_nodes.keys() + running_nodes.keys())
+
+for key in sort_instances(keys):
+    print "Redshift-%s\t%d\t%d\t%d" % (key, running_nodes[key], reserved_nodes[key], running_nodes[key] - reserved_nodes[key])
