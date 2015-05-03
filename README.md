@@ -20,6 +20,7 @@ optional arguments:
   --no-ec2          do not check EC2
   --no-rds          do not check RDS
   --no-redshift     do not check Redshift
+  --profile PROFILES  specify AWS profile (s) (optional)
  ```
 
 Sample output:
@@ -44,4 +45,11 @@ db.t2.small	mysql	True	us-east-1	1	1	0
 
 Assumes that all ec2 reservations are for the same platform and tenancy.
 
-Will use roles or environment variables to authenticate itself to the EC2 API.
+If an AWS profile (or profiles) are specified, those will be used.  Otherwise,
+will use roles or environment variables to authenticate itself to the EC2 API.
+
+Be sure to understand how cross-account billing of reserved instances works
+if you're going to specify multiple profiles.  It is useful in the scenario where
+a payer account has all of the reservations and the child accounts have the 
+actual instances.  It will be extremely misleading in a scenario where reservations
+and accounts are scattered between the various accounts
