@@ -9,6 +9,7 @@ positive balances indicate instances that are not falling under RIs
 import argparse
 import re
 
+from collections import Counter
 from collections import defaultdict
 
 import boto.ec2
@@ -17,10 +18,12 @@ import boto.redshift
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--region', action="append", dest="regions", help="specify a region (default is all standard regions)")
+parser.add_argument('--no-ec2', action="store_false", dest="ec2", default=True, help="do not check EC2")
+parser.add_argument('--no-rds', action="store_false", dest="rds", default=True, help="do not check RDS")
+parser.add_argument('--no-redshift', action="store_false", dest="redshift", default=True, help="do not check Redshift")
 args = parser.parse_args()
 
 DISABLED_REGIONS = ['cn-north-1', 'us-gov-west-1']
-
 
 def sort_instances(instances):
     size_order = {'micro': 0, 'small': 1, 'medium': 2, 'large': 3, 'xlarge': 4, '2xlarge': 5, '4xlarge': 6, '8xlarge': 7}
@@ -48,55 +51,58 @@ else:
     regions['redshift'] = [r for r in boto.redshift.regions() if r.name in args.regions]
     regions['rds'] = [r for r in boto.rds2.regions() if r.name in args.regions]
 
-print "Instance\t\t\tRun\tReserve\tDiff"
-for region in regions['ec2']:
-    ec2 = region.connect()
+if args.ec2:
+    print "EC2 Reservation Report"
+    print "Instance\tPlacement\tRun\tReserve\tDiff"
+    for region in regions['ec2']:
+        ec2 = region.connect()
 
-    running_instances = defaultdict(int)
-    running = ec2.get_all_reservations(filters={'instance-state-name': 'running'})
-    for r in running:
-        for i in r.instances:
-            running_instances[i.instance_type + "\t" + i.placement] += 1
+        running = ec2.get_all_reservations(filters={'instance-state-name': 'running'})
+        running_instances = Counter([i.instance_type + "\t" + i.placement for r in running for i in r.instances])
 
-    reserved_instances = defaultdict(int)
-    for ri in ec2.get_all_reserved_instances(filters={'state': ['active', 'payment-pending']}):
-        reserved_instances[ri.instance_type + "\t" + ri.availability_zone] += ri.instance_count
+        reserved_instances = defaultdict(int)
+        for ri in ec2.get_all_reserved_instances(filters={'state': ['active', 'payment-pending']}):
+            reserved_instances[ri.instance_type + "\t" + ri.availability_zone] += ri.instance_count
 
-    print_results(running_instances, reserved_instances)
+        print_results(running_instances, reserved_instances)
 
-# RedShift
-for region in regions['redshift']:
-    conn = boto.redshift.connect_to_region(region.name)
+# Redshift
+if args.redshift:
+    print "Redshift Reservation Report"
+    print "NodeType\tRegion  \tRunning\tReserve\tDiff"
+    for region in regions['redshift']:
+        conn = boto.redshift.connect_to_region(region.name)
 
-    running_nodes = defaultdict(int)
-    cluster_response = conn.describe_clusters()
-    for cluster in cluster_response['DescribeClustersResponse']['DescribeClustersResult']['Clusters']:
-        running_nodes[cluster['NodeType'] + "\t" + region.name] += cluster['NumberOfNodes']
+        running_nodes = defaultdict(int)
+        cluster_response = conn.describe_clusters()
+        for cluster in cluster_response['DescribeClustersResponse']['DescribeClustersResult']['Clusters']:
+            running_nodes[cluster['NodeType'] + "\t" + region.name] += cluster['NumberOfNodes']
 
-    reserved_nodes = defaultdict(int)
-    reservation_response = conn.describe_reserved_nodes()
-    active_reservations = [x for x in reservation_response['DescribeReservedNodesResponse']['DescribeReservedNodesResult']['ReservedNodes'] if x['State'] in ('active', 'payment-pending')]
-    for reservation in active_reservations:
-        reserved_nodes[reservation['NodeType'] + "\t" + region.name] += reservation['NodeCount']
+        reserved_nodes = defaultdict(int)
+        reservation_response = conn.describe_reserved_nodes()
+        active_reservations = [x for x in reservation_response['DescribeReservedNodesResponse']['DescribeReservedNodesResult']['ReservedNodes'] if x['State'] in ('active', 'payment-pending')]
+        for reservation in active_reservations:
+            reserved_nodes[reservation['NodeType'] + "\t" + region.name] += reservation['NodeCount']
 
-    print_results(running_nodes, reserved_nodes)
+        print_results(running_nodes, reserved_nodes)
 
 # RDS
-for region in regions['rds']:
-    conn = boto.rds2.connect_to_region(region.name)
+if args.rds:
+    print "RDS Reservation Report"
+    print "Instance\tDB\tMultiAZ\tRegion  \tRunning\tReserve\tDiff"
+    for region in regions['rds']:
+        conn = boto.rds2.connect_to_region(region.name)
 
-    running_rds = defaultdict(int)
-    rdb_response = conn.describe_db_instances()
-    for db in rdb_response['DescribeDBInstancesResponse']['DescribeDBInstancesResult']['DBInstances']:
-        az = "MultiAZ" if db['MultiAZ'] else "SingleAZ"
-        running_rds[db['DBInstanceClass'] + "\t" + db['Engine'] + "\t" + az + "\t" + region.name] += 1
+        running_rds = defaultdict(int)
+        rdb_response = conn.describe_db_instances()
+        for db in rdb_response['DescribeDBInstancesResponse']['DescribeDBInstancesResult']['DBInstances']:
+            running_rds[db['DBInstanceClass'] + "\t" + db['Engine'] + "\t" + str(db['MultiAZ']) + "\t" + region.name] += 1
 
-    reserved_rds = defaultdict(int)
-    reservation_response = conn.describe_reserved_db_instances()
-    active_reservations = [x for x in reservation_response['DescribeReservedDBInstancesResponse']['DescribeReservedDBInstancesResult']['ReservedDBInstances'] if x['State'] in ('active', 'payment-pending')]
-    for r in active_reservations:
-        az = "MultiAZ" if r['MultiAZ'] else "SingleAZ"
-        reserved_rds[r['DBInstanceClass'] + "\t" + r['ProductDescription'] + "\t" +  az + "\t" + region.name] += r['DBInstanceCount']
+        reserved_rds = defaultdict(int)
+        reservation_response = conn.describe_reserved_db_instances()
+        active_reservations = [x for x in reservation_response['DescribeReservedDBInstancesResponse']['DescribeReservedDBInstancesResult']['ReservedDBInstances'] if x['State'] in ('active', 'payment-pending')]
+        for r in active_reservations:
+            reserved_rds[r['DBInstanceClass'] + "\t" + r['ProductDescription'] + "\t" + str(db['MultiAZ']) + "\t" + region.name] += r['DBInstanceCount']
 
-    print_results(running_rds, reserved_rds)
+        print_results(running_rds, reserved_rds)
 
