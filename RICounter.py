@@ -12,6 +12,7 @@ import re
 from collections import defaultdict
 
 import boto.ec2
+import boto.rds2
 import boto.redshift
 
 parser = argparse.ArgumentParser()
@@ -77,3 +78,30 @@ for region in regions:
 	keys = set(reserved_nodes.keys() + running_nodes.keys())
 	for key in sort_instances(keys):
 	    print "Redshift-%s\t%d\t%d\t%d" % (key, running_nodes[key], reserved_nodes[key], running_nodes[key] - reserved_nodes[key])
+
+# RDS
+if args.regions is None:
+    regions = [r for r in boto.rds2.regions() if r.name not in DISABLED_REGIONS]
+else:
+    regions = [r for r in boto.rds2.regions() if r.name in args.regions]
+
+for region in regions:
+	conn = boto.rds2.connect_to_region(region.name)
+
+	running_rds = defaultdict(int)
+	rdb_response = conn.describe_db_instances()
+	for db in rdb_response['DescribeDBInstancesResponse']['DescribeDBInstancesResult']['DBInstances']:
+		az = "MultiAZ" if db['MultiAZ'] else "SingleAZ"
+		running_rds[db['DBInstanceClass'] + "\t" + db['Engine'] + "\t" + az + "\t" + region.name] += 1
+
+	reserved_rds = defaultdict(int)
+	reservation_response = conn.describe_reserved_db_instances()
+	active_reservations = [x for x in reservation_response['DescribeReservedDBInstancesResponse']['DescribeReservedDBInstancesResult']['ReservedDBInstances'] if x['State'] in ('active', 'payment-pending')]
+	for r in active_reservations:
+		az = "MultiAZ" if r['MultiAZ'] else "SingleAZ"
+		reserved_rds[r['DBInstanceClass'] + "\t" + r['ProductDescription'] + "\t" +  az + "\t" + region.name] += r['DBInstanceCount']
+
+	keys = set(reserved_rds.keys() + running_rds.keys())
+	for key in sorted(keys):
+	    print "RDS-%s\t%d\t%d\t%d" % (key, running_rds[key], reserved_rds[key], running_rds[key] - reserved_rds[key])
+
