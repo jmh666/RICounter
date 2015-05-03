@@ -22,8 +22,10 @@ args = parser.parse_args()
 
 DISABLED_REGIONS = ['cn-north-1', 'us-gov-west-1']
 
+
 def sort_instances(instances):
     size_order = {'micro': 0, 'small': 1, 'medium': 2, 'large': 3, 'xlarge': 4, '2xlarge': 5, '4xlarge': 6, '8xlarge': 7}
+
     def instance_key(instance):
         if instance[0:3] == 'db.':
             family, size = re.split('\W', instance)[1:3]
@@ -31,6 +33,7 @@ def sort_instances(instances):
             family, size = re.split('\W', instance)[0:2]
         return family + str(size_order[size])
     return sorted(instances, key=instance_key)
+
 
 def print_results(running, reserved):
     keys = set(running.keys() + reserved.keys())
@@ -100,4 +103,3 @@ if args.rds:
             reserved_rds[r['DBInstanceClass'] + "\t" + r['ProductDescription'] + "\t" + str(db['MultiAZ']) + "\t" + region.name] += r['DBInstanceCount']
 
         print_results(running_rds, reserved_rds)
-
