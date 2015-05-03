@@ -93,10 +93,8 @@ if args.rds:
     for region in regions['rds']:
         conn = boto.rds2.connect_to_region(region.name)
 
-        running_rds = defaultdict(int)
         rdb_response = conn.describe_db_instances()
-        for db in rdb_response['DescribeDBInstancesResponse']['DescribeDBInstancesResult']['DBInstances']:
-            running_rds[db['DBInstanceClass'] + "\t" + db['Engine'] + "\t" + str(db['MultiAZ']) + "\t" + region.name] += 1
+        running_rds = Counter([db['DBInstanceClass'] + "\t" + db['Engine'] + "\t" + str(db['MultiAZ']) + "\t" + region.name for db in rdb_response['DescribeDBInstancesResponse']['DescribeDBInstancesResult']['DBInstances']])
 
         reserved_rds = defaultdict(int)
         reservation_response = conn.describe_reserved_db_instances()
