@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 """
 RICounter - Creates reservation reports for EC2, Redshift, and RDS.
