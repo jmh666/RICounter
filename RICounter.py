@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
 """
-RICounter - Creates an RI usage report.
-
-negative balances indicate excess reserved instances
-positive balances indicate instances that are not falling under RIs
+RICounter - Creates reservation reports for EC2, Redshift, and RDS.
 """
 import argparse
 import re
@@ -17,7 +14,7 @@ import boto.rds2
 import boto.redshift
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--region', action="append", dest="regions", help="specify a region (default is all standard regions)")
+parser.add_argument('--region', action="append", dest="regions", help="specify region(s) (default is all standard regions)")
 parser.add_argument('--no-ec2', action="store_false", dest="ec2", default=True, help="do not check EC2")
 parser.add_argument('--no-rds', action="store_false", dest="rds", default=True, help="do not check RDS")
 parser.add_argument('--no-redshift', action="store_false", dest="redshift", default=True, help="do not check Redshift")
