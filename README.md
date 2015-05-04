@@ -48,8 +48,5 @@ Assumes that all ec2 reservations are for the same platform and tenancy.
 If an AWS profile (or profiles) are specified, those will be used.  Otherwise,
 will use roles or environment variables to authenticate itself to the EC2 API.
 
-Be sure to understand how cross-account billing of reserved instances works
-if you're going to specify multiple profiles.  It is useful in the scenario where
-a payer account has all of the reservations and the child accounts have the 
-actual instances.  It will be extremely misleading in a scenario where reservations
-and accounts are scattered between the various accounts
+Be sure to understand how consolidated billing of reserved instances works
+if you're going to specify profiles that span multiple accounts.
