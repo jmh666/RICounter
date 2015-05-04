@@ -18,6 +18,7 @@ parser.add_argument('--region', action="append", dest="regions", help="specify r
 parser.add_argument('--no-ec2', action="store_false", dest="ec2", default=True, help="do not check EC2")
 parser.add_argument('--no-rds', action="store_false", dest="rds", default=True, help="do not check RDS")
 parser.add_argument('--no-redshift', action="store_false", dest="redshift", default=True, help="do not check Redshift")
+parser.add_argument('--only-variance', action="store_true", dest="only_variance", default=False, help="only output lines with a variance")
 parser.add_argument('--profile', action="append", dest="profiles", default=None, help="specify AWS profile (s) (optional)")
 
 args = parser.parse_args()
@@ -40,7 +41,9 @@ def sort_instances(instances):
 def print_results(running, reserved):
     keys = set(running.keys() + reserved.keys())
     for key in sort_instances(keys):
-        print "%s\t%d\t%d\t%d" % (key, running[key], reserved[key], running[key] - reserved[key])
+        variance = running[key] - reserved[key]
+        if args.only_variance is False or abs(variance) > 0:
+            print "%s\t%d\t%d\t%d" % (key, running[key], reserved[key], running[key] - reserved[key])
 
 
 regions = {}
