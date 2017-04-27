@@ -28,7 +28,7 @@ DISABLED_REGIONS = ['cn-north-1', 'us-gov-west-1']
 
 
 def sort_instances(instances):
-    size_order = {'micro': 0, 'small': 1, 'medium': 2, 'large': 3, 'xlarge': 4, '2xlarge': 5, '4xlarge': 6, '8xlarge': 7}
+    size_order = {'nano': 0, 'micro': 1, 'small': 2, 'medium': 3, 'large': 4, 'xlarge': 5, '2xlarge': 6, '4xlarge': 7, '8xlarge': 8, '10xlarge': 9, '16xlarge': 10, '32xlarge': 11}
 
     def instance_key(instance):
         if instance[0:3] == 'db.':
